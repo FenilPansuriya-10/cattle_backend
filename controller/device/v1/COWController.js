@@ -1,13 +1,12 @@
-const COW = require('../../../model/COW');
-const ShedTransferHistory = require('../../../model/shedTransferHistory');
-const COWSchemaKey = require('../../../utils/validation/COWValidation');
-const shedTransferHistorySchemaKey = require('../../../utils/validation/shedTransferHistoryValidation');
-const validation = require('../../../utils/validateRequest');
-const dbService = require('../../../utils/dbService');
-const ObjectId = require('mongodb').ObjectId;
-const common = require('../../../utils/common');
-const MILK = require('../../../model/milk');
-
+const COW = require("../../../model/COW");
+const ShedTransferHistory = require("../../../model/shedTransferHistory");
+const COWSchemaKey = require("../../../utils/validation/COWValidation");
+const shedTransferHistorySchemaKey = require("../../../utils/validation/shedTransferHistoryValidation");
+const validation = require("../../../utils/validateRequest");
+const dbService = require("../../../utils/dbService");
+const ObjectId = require("mongodb").ObjectId;
+const common = require("../../../utils/common");
+const MILK = require("../../../model/milk");
 
 const removeDuplicate = async (req, res) => {
   const tagIdsToRemove = req.body.tag_id;
@@ -17,17 +16,21 @@ const removeDuplicate = async (req, res) => {
     //   return res.status(400).json({ error: 'Invalid tag_id provided' });
     // }
 
-    const gaushala_id = req.user.gaushala_id
-
+    const gaushala_id = req.user.gaushala_id;
 
     for (let tagId = 0; tagId < 1610; tagId++) {
       // Remove all duplicates for the specified tag_id except the first one
-      const duplicates = await COW.find({ tag_id: tagId, gaushala_id: gaushala_id });
+      const duplicates = await COW.find({
+        tag_id: tagId,
+        gaushala_id: gaushala_id,
+      });
       if (duplicates.length <= 1) {
         //successMessages.push(`No duplicates found or only one record exists for tag_id: ${tagId}`);
       } else {
         try {
-          const idsToRemove = duplicates.slice(1).map((duplicate) => duplicate._id);
+          const idsToRemove = duplicates
+            .slice(1)
+            .map((duplicate) => duplicate._id);
           await COW.deleteMany({ _id: { $in: idsToRemove } });
           //  successMessages.push(`Duplicates removed successfully for tag_id: ${tagId}`);
         } catch (err) {
@@ -45,15 +48,13 @@ const removeDuplicate = async (req, res) => {
     // const idsToRemove = duplicates.slice(1).map((duplicate) => duplicate._id);
     // await COW.deleteMany({ _id: { $in: idsToRemove } });
 
-    return res.status(200).json({ message: 'Duplicates removed successfully' });
+    return res.status(200).json({ message: "Duplicates removed successfully" });
   } catch (err) {
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-}
+};
 
 function parseToInt(stringParse) {
-
   let parsedInt = parseInt(stringParse);
 
   if (!isNaN(parsedInt)) {
@@ -61,42 +62,56 @@ function parseToInt(stringParse) {
   }
 
   return stringParse;
-
 }
 
 const cowTransfer = async (req, res) => {
   try {
-
     if (!req.body.cowId) {
-      res.badRequest({ message: 'Insufficient request parameters! id is required.' });
+      res.badRequest({
+        message: "Insufficient request parameters! id is required.",
+      });
     }
 
-    let dataToCreate = { ...req.body || {} };
+    let dataToCreate = { ...(req.body || {}) };
     let validateRequest = validation.validateParamsWithJoi(
       dataToCreate,
-      shedTransferHistorySchemaKey.schemaKeys);
+      shedTransferHistorySchemaKey.schemaKeys,
+    );
     if (!validateRequest.isValid) {
-      return res.validationError({ message: `Invalid values in parameters, ${validateRequest.message}` });
+      return res.validationError({
+        message: `Invalid values in parameters, ${validateRequest.message}`,
+      });
     }
 
     // const query = { tag_id :req.body.cowId };
 
-    const v1 = (req.body.cowId)
-    let updatedCOW = '';
-    const gaushala_id = req.user.gaushala_id
+    const v1 = req.body.cowId;
+    let updatedCOW = "";
+    const gaushala_id = req.user.gaushala_id;
     const parsedInt = parseInt(v1);
 
     if (!isNaN(parsedInt)) {
-      updatedCOW = await dbService.updateOne(COW, { tag_id: parsedInt, gaushala_id: gaushala_id }, { shed_id: req.body.newShed, type: req.body.cowType });
+      updatedCOW = await dbService.updateOne(
+        COW,
+        { tag_id: parsedInt, gaushala_id: gaushala_id },
+        { shed_id: req.body.newShed, type: req.body.cowType },
+      );
       if (!updatedCOW) {
-        updatedCOW = await dbService.updateOne(COW, { tag_id: req.body.cowId, gaushala_id: gaushala_id }, { shed_id: req.body.newShed, type: req.body.cowType });
+        updatedCOW = await dbService.updateOne(
+          COW,
+          { tag_id: req.body.cowId, gaushala_id: gaushala_id },
+          { shed_id: req.body.newShed, type: req.body.cowType },
+        );
         if (!updatedCOW) {
           return res.recordNotFound();
         }
-
       }
     } else {
-      updatedCOW = await dbService.updateOne(COW, { tag_id: req.body.cowId, gaushala_id: gaushala_id }, { shed_id: req.body.newShed, type: req.body.cowType });
+      updatedCOW = await dbService.updateOne(
+        COW,
+        { tag_id: req.body.cowId, gaushala_id: gaushala_id },
+        { shed_id: req.body.newShed, type: req.body.cowType },
+      );
       if (!updatedCOW) {
         return res.recordNotFound();
       }
@@ -120,18 +135,28 @@ const cowTransfer = async (req, res) => {
  */
 const addCOW = async (req, res) => {
   try {
-    let dataToCreate = { ...req.body || {} };
-    let foundCOW = '';
-    let options = '';
-    const gaushala_id = req.user.gaushala_id
+    let dataToCreate = { ...(req.body || {}) };
+    let foundCOW = "";
+    let options = "";
+    const gaushala_id = req.user.gaushala_id;
 
-    foundCOW = await dbService.findOne(COW, { tag_id: parseToInt(req.body.tag_id), gaushala_id: gaushala_id }, options);
+    foundCOW = await dbService.findOne(
+      COW,
+      { tag_id: parseToInt(req.body.tag_id), gaushala_id: gaushala_id },
+      options,
+    );
 
     if (foundCOW === null) {
-      foundCOW = await dbService.findOne(COW, { tag_id: req.body.tag_id, gaushala_id: gaushala_id }, options);
+      foundCOW = await dbService.findOne(
+        COW,
+        { tag_id: req.body.tag_id, gaushala_id: gaushala_id },
+        options,
+      );
     }
     if (foundCOW) {
-      return res.validationError({ message: `A record with tag_id '${dataToCreate.tag_id}' already exists.` });
+      return res.validationError({
+        message: `A record with tag_id '${dataToCreate.tag_id}' already exists.`,
+      });
     }
 
     if (dataToCreate.dob == "") {
@@ -145,12 +170,15 @@ const addCOW = async (req, res) => {
 
     let validateRequest = validation.validateParamsWithJoi(
       dataToCreate,
-      COWSchemaKey.schemaKeys);
+      COWSchemaKey.schemaKeys,
+    );
     if (!validateRequest.isValid) {
-      return res.validationError({ message: `Invalid values in parameters, ${validateRequest.message}` });
+      return res.validationError({
+        message: `Invalid values in parameters, ${validateRequest.message}`,
+      });
     }
     dataToCreate.addedBy = req.user.user_id;
-    dataToCreate.gaushala_id = req.user.gaushala_id
+    dataToCreate.gaushala_id = req.user.gaushala_id;
 
     dataToCreate = new COW(dataToCreate);
     let createdCOW = await dbService.create(COW, dataToCreate);
@@ -162,28 +190,25 @@ const addCOW = async (req, res) => {
 
 const getCowLsatID = async (req, res) => {
   try {
-
     const gaushala_id = req.query.gaushala_id;
 
     if (!gaushala_id) {
       return res.badRequest({ message: "gaushala_id is required" });
     }
 
-    const lastCow = await COW
-      .findOne({ gaushala_id: gaushala_id })
-      .sort({ _id: -1 });
+    const lastCow = await COW.findOne({ gaushala_id: gaushala_id }).sort({
+      _id: -1,
+    });
 
     if (!lastCow) {
       return res.recordNotFound({ message: "No cow found" });
     }
 
     return res.success({ data: lastCow.tag_id });
-
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
 };
-
 
 /**
  * @description : create multiple documents of COW in mongodb collection.
@@ -215,17 +240,19 @@ const getCowLsatID = async (req, res) => {
 //   }
 // }
 
-
 const bulkInsertCOW = async (req, res) => {
   try {
-    if (req.body && (!Array.isArray(req.body.data) || req.body.data.length < 1)) {
+    if (
+      req.body &&
+      (!Array.isArray(req.body.data) || req.body.data.length < 1)
+    ) {
       return res.badRequest();
     }
     let dataToCreate = [...req.body.data];
     for (let i = 0; i < dataToCreate.length; i++) {
       dataToCreate[i] = {
         ...dataToCreate[i],
-        addedBy: req.user.id
+        addedBy: req.user.id,
       };
     }
     let createdCOWs = await dbService.create(COW, dataToCreate);
@@ -245,9 +272,9 @@ const bulkInsertCOW = async (req, res) => {
 const findAllCOW = async (req, res) => {
   try {
     const reqBody = {
-      "query": {},
-      "options": {
-        "select": [
+      query: {},
+      options: {
+        select: [
           "breed",
           "type",
           "shed_id",
@@ -255,25 +282,25 @@ const findAllCOW = async (req, res) => {
           "calf_name",
           "isFemale",
           "createdAt",
-          "dob"
+          "dob",
         ],
-        "collation": "",
-        "sort": "",
-        "populate": "",
-        "projection": "",
-        "lean": false,
-        "leanWithId": true,
-        "offset": 0,
-        "page": 1,
-        "limit": 2000,
-        "pagination": false,
-        "useEstimatedCount": false,
-        "useCustomCountFn": false,
-        "forceCountFn": false,
-        "read": {},
-        "options": {}
+        collation: "",
+        sort: "",
+        populate: "",
+        projection: "",
+        lean: false,
+        leanWithId: true,
+        offset: 0,
+        page: 1,
+        limit: 2000,
+        pagination: false,
+        useEstimatedCount: false,
+        useCustomCountFn: false,
+        forceCountFn: false,
+        read: {},
+        options: {},
       },
-      "isCountOnly": false
+      isCountOnly: false,
     };
 
     let options = reqBody.options;
@@ -287,7 +314,6 @@ const findAllCOW = async (req, res) => {
       };
     }
 
-
     if (Array.isArray(req.body.shed_id) && req.body.shed_id.length > 0) {
       // Add an shed_id condition using $in to match any of the specified values
       query.shed_id = {
@@ -298,19 +324,23 @@ const findAllCOW = async (req, res) => {
     let validateRequest = validation.validateFilterWithJoi(
       reqBody,
       COWSchemaKey.findFilterKeys,
-      COW.schema.obj
+      COW.schema.obj,
     );
     if (!validateRequest.isValid) {
       return res.validationError({ message: `${validateRequest.message}` });
     }
-    if (typeof reqBody.query === 'object' && reqBody.query !== null) {
+    if (typeof reqBody.query === "object" && reqBody.query !== null) {
       query = { ...reqBody.query };
     }
     if (reqBody.isCountOnly) {
       let totalRecords = await dbService.count(COW, query);
       return res.success({ data: { totalRecords } });
     }
-    if (reqBody && typeof reqBody.options === 'object' && reqBody.options !== null) {
+    if (
+      reqBody &&
+      typeof reqBody.options === "object" &&
+      reqBody.options !== null
+    ) {
       options = { ...reqBody.options };
     }
     let foundCOWs = await dbService.paginate(COW, query, options);
@@ -332,7 +362,7 @@ const findAllCOW = async (req, res) => {
 // retuns latest dob
 function getLatestDOB(dataArray) {
   if (!dataArray || dataArray.length === 0) {
-    return ''; // Return blank if the array is empty or not provided
+    return ""; // Return blank if the array is empty or not provided
   }
 
   let latestDOB = dataArray[0].dob; // Initialize with the first element's dob
@@ -348,44 +378,56 @@ function getLatestDOB(dataArray) {
 
 const getCOW = async (req, res) => {
   try {
-    // let query = {}; 
+    // let query = {};
     // if (!ObjectId.isValid(req.params.id)) {
     //   return res.validationError({ message : 'invalid objectId.' });
     // }
     // query._id = req.params.id;
 
     if (!req.body.tag_id) {
-      return res.badRequest({ message: 'Insufficient request parameters! tag id is required.' });
+      return res.badRequest({
+        message: "Insufficient request parameters! tag id is required.",
+      });
     }
 
     let options = {};
-    let foundCOW = '';
-    const gaushala_id = req.user.gaushala_id
+    let foundCOW = "";
+    const gaushala_id = req.user.gaushala_id;
 
-    foundCOW = await dbService.findOne(COW, { tag_id: (req.body.tag_id), gaushala_id: gaushala_id }, options);
+    foundCOW = await dbService.findOne(
+      COW,
+      { tag_id: req.body.tag_id, gaushala_id: gaushala_id },
+      options,
+    );
 
     if (foundCOW === null) {
-      foundCOW = await dbService.findOne(COW, { tag_id: req.body.tag_id, gaushala_id: gaushala_id }, options);
+      foundCOW = await dbService.findOne(
+        COW,
+        { tag_id: req.body.tag_id, gaushala_id: gaushala_id },
+        options,
+      );
     }
 
     if (!foundCOW) {
       return res.recordNotFound();
     }
 
-    let cowCalfs = await COW.find({ dam_id: req.body.tag_id, gaushala_id: gaushala_id });
+    let cowCalfs = await COW.find({
+      dam_id: req.body.tag_id,
+      gaushala_id: gaushala_id,
+    });
 
     const latestCalfdob = getLatestDOB(cowCalfs);
 
     return res.success({ data: { foundCOW, latestCalfdob } });
-  }
-  catch (error) {
+  } catch (error) {
     return res.internalServerError({ message: error.message });
   }
 };
 
 /**
  * @description : returns total number of documents of COW.
- * @param {Object} req : request including where object to apply filters in req body 
+ * @param {Object} req : request including where object to apply filters in req body
  * @param {Object} res : response that returns total number of documents.
  * @return {Object} : number of documents. {status, message, data}
  */
@@ -399,7 +441,7 @@ const getCOWCount = async (req, res) => {
     if (!validateRequest.isValid) {
       return res.validationError({ message: `${validateRequest.message}` });
     }
-    if (typeof req.body.where === 'object' && req.body.where !== null) {
+    if (typeof req.body.where === "object" && req.body.where !== null) {
       where = { ...req.body.where };
     }
     let countedCOW = await dbService.count(COW, where);
@@ -423,13 +465,15 @@ const updateCOW = async (req, res) => {
     };
     let validateRequest = validation.validateParamsWithJoi(
       dataToUpdate,
-      COWSchemaKey.updateSchemaKeys
+      COWSchemaKey.updateSchemaKeys,
     );
     if (!validateRequest.isValid) {
-      return res.validationError({ message: `Invalid values in parameters, ${validateRequest.message}` });
+      return res.validationError({
+        message: `Invalid values in parameters, ${validateRequest.message}`,
+      });
     }
     let query = { _id: req.params.id };
-    query.gaushala_id = req.user.gaushala_id
+    query.gaushala_id = req.user.gaushala_id;
     let updatedCOW = await dbService.updateOne(COW, query, dataToUpdate);
     if (!updatedCOW) {
       return res.recordNotFound();
@@ -450,11 +494,15 @@ const bulkUpdateCOW = async (req, res) => {
   try {
     let filter = req.body && req.body.filter ? { ...req.body.filter } : {};
     let dataToUpdate = {};
-    delete dataToUpdate['addedBy'];
-    if (req.body && typeof req.body.data === 'object' && req.body.data !== null) {
+    delete dataToUpdate["addedBy"];
+    if (
+      req.body &&
+      typeof req.body.data === "object" &&
+      req.body.data !== null
+    ) {
       dataToUpdate = {
         ...req.body.data,
-        updatedBy: req.user.id
+        updatedBy: req.user.id,
       };
     }
     let updatedCOW = await dbService.updateMany(COW, filter, dataToUpdate);
@@ -476,22 +524,26 @@ const bulkUpdateCOW = async (req, res) => {
 const partialUpdateCOW = async (req, res) => {
   try {
     if (!req.params.id) {
-      res.badRequest({ message: 'Insufficient request parameters! id is required.' });
+      res.badRequest({
+        message: "Insufficient request parameters! id is required.",
+      });
     }
-    delete req.body['addedBy'];
+    delete req.body["addedBy"];
     let dataToUpdate = {
       ...req.body,
       updatedBy: req.user.id,
     };
     let validateRequest = validation.validateParamsWithJoi(
       dataToUpdate,
-      COWSchemaKey.updateSchemaKeys
+      COWSchemaKey.updateSchemaKeys,
     );
     if (!validateRequest.isValid) {
-      return res.validationError({ message: `Invalid values in parameters, ${validateRequest.message}` });
+      return res.validationError({
+        message: `Invalid values in parameters, ${validateRequest.message}`,
+      });
     }
     let query = { _id: req.params.id };
-    query.gaushala_id = req.user.gaushala_id
+    query.gaushala_id = req.user.gaushala_id;
     let updatedCOW = await dbService.updateOne(COW, query, dataToUpdate);
     if (!updatedCOW) {
       return res.recordNotFound();
@@ -510,10 +562,12 @@ const partialUpdateCOW = async (req, res) => {
 const softDeleteCOW = async (req, res) => {
   try {
     if (!req.params.id) {
-      return res.badRequest({ message: 'Insufficient request parameters! id is required.' });
+      return res.badRequest({
+        message: "Insufficient request parameters! id is required.",
+      });
     }
     let query = { _id: req.params.id };
-    query.gaushala_id = req.user.gaushala_id
+    query.gaushala_id = req.user.gaushala_id;
     const updateBody = {
       isDeleted: true,
       updatedBy: req.user.id,
@@ -537,18 +591,18 @@ const softDeleteCOW = async (req, res) => {
 const deleteCOW = async (req, res) => {
   try {
     if (!req.params.id) {
-      return res.badRequest({ message: 'Insufficient request parameters! id is required.' });
+      return res.badRequest({
+        message: "Insufficient request parameters! id is required.",
+      });
     }
     let query = { _id: req.params.id };
-    query.gaushala_id = req.user.gaushala_id
+    query.gaushala_id = req.user.gaushala_id;
     const deletedCOW = await dbService.deleteOne(COW, query);
     if (!deletedCOW) {
       return res.recordNotFound();
     }
     return res.success({ data: deletedCOW });
-
-  }
-  catch (error) {
+  } catch (error) {
     return res.internalServerError({ message: error.message });
   }
 };
@@ -566,7 +620,7 @@ const deleteManyCOW = async (req, res) => {
       return res.badRequest();
     }
     let query = { _id: { $in: ids } };
-    query.gaushala_id = req.user.gaushala_id
+    query.gaushala_id = req.user.gaushala_id;
     const deletedCOW = await dbService.deleteMany(COW, query);
     if (!deletedCOW) {
       return res.recordNotFound();
@@ -589,7 +643,7 @@ const softDeleteManyCOW = async (req, res) => {
       return res.badRequest();
     }
     let query = { _id: { $in: ids } };
-    query.gaushala_id = req.user.gaushala_id
+    query.gaushala_id = req.user.gaushala_id;
     const updateBody = {
       isDeleted: true,
       updatedBy: req.user.id,
@@ -599,7 +653,6 @@ const softDeleteManyCOW = async (req, res) => {
       return res.recordNotFound();
     }
     return res.success({ data: { count: updatedCOW } });
-
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
@@ -627,16 +680,16 @@ const checkTagIds = async (req, res) => {
     let missingTagIds = [];
 
     ///////////////////////////////
-    let foundCOW = await dbService.findAll(COW, { gaushala_id: req.user.gaushala_id });
+    let foundCOW = await dbService.findAll(COW, {
+      gaushala_id: req.user.gaushala_id,
+    });
 
     // Iterate through each tag_id and find matching COW objects
     for (const tag_id of tag_ids) {
       const matches = foundCOW.filter((cow) => cow.tag_id == tag_id);
       if (matches.length > 0) {
-
         existingTagIds.push(...matches);
       } else {
-
         missingTagIds.push(tag_id);
       }
     }
@@ -644,32 +697,37 @@ const checkTagIds = async (req, res) => {
     // Respond with the result
     res.json({ existingTagIds, missingTagIds });
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 const uploadCowImage = async (req, res) => {
   try {
-
-    const cowId = req.body.id
+    const cowId = req.body.id;
     const gaushala_id = req.user.gaushala_id;
 
-    const findCow = await dbService.findOne(COW, { _id: cowId, gaushala_id: gaushala_id });
+    const findCow = await dbService.findOne(COW, {
+      _id: cowId,
+      gaushala_id: gaushala_id,
+    });
 
     if (!findCow) {
       return res.recordNotFound();
     }
 
-    const folderName = `${findCow.tag_id}-${findCow.calf_name}-${cowId}`
+    const folderName = `${findCow.tag_id}-${findCow.calf_name}-${cowId}`;
 
     const filePaths = common.saveImagesLocally(req.files);
     const urls = await common.uploadImagesToS3(filePaths, folderName);
     common.deleteLocalImages(filePaths);
 
-    const updateCow = await dbService.updateOne(COW, { _id: cowId, gaushala_id: gaushala_id }, { avatarUrl: urls[0] });
+    const updateCow = await dbService.updateOne(
+      COW,
+      { _id: cowId, gaushala_id: gaushala_id },
+      { avatarUrl: urls[0] },
+    );
 
     return res.success({ data: updateCow });
-
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
@@ -685,26 +743,26 @@ const updateSendDiedCows = async (req, res) => {
       let dataToUpdate = {};
       const cowId = cow.tag_id.toString();
 
-      const remark = cow.send_died_date || '';
-      const remark2 = cow.remark || '';
+      const remark = cow.send_died_date || "";
+      const remark2 = cow.remark || "";
 
       const remark3 = `${remark2}-${remark}`;
-      let date = 'NA';
+      let date = "NA";
       if (cow.date != "NA") {
-        date = convertDateFormat(cow.date)
+        date = convertDateFormat(cow.date);
 
         dataToUpdate.send_died_date = date;
       }
 
       if (dataToUpdate.send_died_date == undefined) {
-        dataToUpdate.send_died_date = "NA"
+        dataToUpdate.send_died_date = "NA";
       }
 
       dataToUpdate.remark = remark3;
       dataToUpdate.type = cowType(remark2);
 
       if (cow.name != "NA") {
-        dataToUpdate.calf_name = cow.name
+        dataToUpdate.calf_name = cow.name;
       }
 
       console.log("dataToUpdate : " + dataToUpdate.send_died_date);
@@ -729,7 +787,6 @@ const updateSendDiedCows = async (req, res) => {
     }
 
     return res.success({ data: { successCowIds, errorCowIds } });
-
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
@@ -737,39 +794,35 @@ const updateSendDiedCows = async (req, res) => {
 
 function convertDateFormat(inputDate) {
   // Split the input date into day, month, and year
-  const dateComponents = inputDate.split('-');
+  const dateComponents = inputDate.split("-");
 
   // Rearrange the components to form the desired output format
-  const outputDate = `${dateComponents[2]}-${dateComponents[1].padStart(2, '0')}-${dateComponents[0].padStart(2, '0')}`;
+  const outputDate = `${dateComponents[2]}-${dateComponents[1].padStart(2, "0")}-${dateComponents[0].padStart(2, "0")}`;
 
   return outputDate;
 }
 
 function cowType(type) {
-
   if (type == "") {
-    type = ""
-    return type
+    type = "";
+    return type;
   } else if (type == "DIED") {
-    type = "Died"
-    return type
+    type = "Died";
+    return type;
   } else if (type == "DONATION") {
-    type = "Donate"
-    return type
+    type = "Donate";
+    return type;
   } else if (type == "SEMEN") {
-    type = "Semen"
-    return type
+    type = "Semen";
+    return type;
   }
-
 }
-
-
 
 const MAX_DEPTH = 100; // Set your desired maximum depth
 
 async function getFamilyHierarchy(tagId, gaushala_id, depth = 0) {
   try {
-    const cow = await COW.findOne({ "tag_id": tagId, "gaushala_id": gaushala_id });
+    const cow = await COW.findOne({ tag_id: tagId, gaushala_id: gaushala_id });
 
     if (!cow) {
       console.log("Cow not found");
@@ -779,7 +832,7 @@ async function getFamilyHierarchy(tagId, gaushala_id, depth = 0) {
     const cowFamily = {
       cowId: tagId,
       calfName: cow.calf_name,
-      gender: cow.isFemale == true ? 'Female' : 'Male',
+      gender: cow.isFemale == true ? "Female" : "Male",
       birthDate: cow.dob,
       type: cow.type,
       breed: cow.breed,
@@ -790,27 +843,46 @@ async function getFamilyHierarchy(tagId, gaushala_id, depth = 0) {
 
     // Recursively fetch and add the hierarchy
     if (depth < MAX_DEPTH) {
-      const motherData = await printFamilyHierarchy(cow.dam_id, "Mother", depth + 1, gaushala_id);
-      const fatherData = await printFamilyHierarchy(cow.sair_id, "Father", depth + 1, gaushala_id);
+      const motherData = await printFamilyHierarchy(
+        cow.dam_id,
+        "Mother",
+        depth + 1,
+        gaushala_id,
+      );
+      const fatherData = await printFamilyHierarchy(
+        cow.sair_id,
+        "Father",
+        depth + 1,
+        gaushala_id,
+      );
 
       // Filter out null values
-      cowFamily.parents = [motherData, fatherData].filter(data => data !== null);
+      cowFamily.parents = [motherData, fatherData].filter(
+        (data) => data !== null,
+      );
     }
 
     return cowFamily;
-
   } catch (error) {
     console.log(error);
     throw error; // Rethrow the error for handling in the calling function
   }
 }
 
-async function printFamilyHierarchy(parentId, relationship, depth, gaushala_id) {
+async function printFamilyHierarchy(
+  parentId,
+  relationship,
+  depth,
+  gaushala_id,
+) {
   if (parentId === "NA" || depth >= MAX_DEPTH) {
     return null;
   }
 
-  const parent = await COW.findOne({ "tag_id": parentId, "gaushala_id": gaushala_id });
+  const parent = await COW.findOne({
+    tag_id: parentId,
+    gaushala_id: gaushala_id,
+  });
 
   if (!parent) {
     return null;
@@ -819,7 +891,7 @@ async function printFamilyHierarchy(parentId, relationship, depth, gaushala_id) 
   const family = {
     cowId: parent.tag_id,
     calfName: parent.calf_name,
-    gender: parent.isFemale == true ? 'Female' : 'Male',
+    gender: parent.isFemale == true ? "Female" : "Male",
     birthDate: parent.dob,
     type: parent.type,
     breed: parent.breed,
@@ -830,16 +902,25 @@ async function printFamilyHierarchy(parentId, relationship, depth, gaushala_id) 
 
   // Recursively fetch and add the hierarchy
   if (depth + 1 < MAX_DEPTH) {
-    const motherData = await printFamilyHierarchy(parent.dam_id, `Grand ${relationship}`, depth + 1, gaushala_id);
-    const fatherData = await printFamilyHierarchy(parent.sair_id, `Grand ${relationship}`, depth + 1, gaushala_id);
+    const motherData = await printFamilyHierarchy(
+      parent.dam_id,
+      `Grand ${relationship}`,
+      depth + 1,
+      gaushala_id,
+    );
+    const fatherData = await printFamilyHierarchy(
+      parent.sair_id,
+      `Grand ${relationship}`,
+      depth + 1,
+      gaushala_id,
+    );
 
     // Filter out null values
-    family.parents = [motherData, fatherData].filter(data => data !== null);
+    family.parents = [motherData, fatherData].filter((data) => data !== null);
   }
 
   return family;
 }
-
 
 function getMatchingTagIds(cowsData) {
   const matchingTagIds = [];
@@ -867,28 +948,26 @@ const getCowFamily = async (req, res) => {
     }
 
     return res.success({ data: filteredCowFamily });
-
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
 };
 
 function filterNullValues(obj) {
-  if (obj === null || typeof obj !== 'object') {
+  if (obj === null || typeof obj !== "object") {
     return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.filter(item => item !== null).map(filterNullValues);
+    return obj.filter((item) => item !== null).map(filterNullValues);
   }
 
   return Object.fromEntries(
     Object.entries(obj)
       .map(([key, value]) => [key, filterNullValues(value)])
-      .filter(([key, value]) => value !== null)
+      .filter(([key, value]) => value !== null),
   );
 }
-
 
 // New API to get children details where given a cow ID, it returns family info of its children (matching dam_id or sire_id)
 const getChildrenDetails = async (req, res) => {
@@ -903,12 +982,14 @@ const getChildrenDetails = async (req, res) => {
     });
 
     if (!children || children.length === 0) {
-      return res.recordNotFound({ message: "No children found for the given cow ID" });
+      return res.recordNotFound({
+        message: "No children found for the given cow ID",
+      });
     }
 
     // For each child, fetch its full family hierarchy
     const childrenDetails = await Promise.all(
-      children.map((c) => getFamilyHierarchy(c.tag_id, gaushala_id))
+      children.map((c) => getFamilyHierarchy(c.tag_id, gaushala_id)),
     );
 
     // Filter out null values from hierarchy results
@@ -922,7 +1003,6 @@ const getChildrenDetails = async (req, res) => {
 
 const getCowsMilkInfo = async (req, res) => {
   try {
-
     let query = {};
     const tag_id = req.body.tag_id;
     const gaushala_id = req.user.gaushala_id;
@@ -945,30 +1025,33 @@ const getCowsMilkInfo = async (req, res) => {
       {
         $match: {
           ...query,
-          date: { $gte: startMonthYear, $lte: endMonthYear } // Filter by date greater than or equal to last year's start date
-        }
+          date: { $gte: startMonthYear, $lte: endMonthYear }, // Filter by date greater than or equal to last year's start date
+        },
       },
       {
         $group: {
-          _id: '$cow_tag_id',
-          totalLiter: { $sum: '$liter' },
-        }
-      }
+          _id: "$cow_tag_id",
+          totalLiter: { $sum: "$liter" },
+        },
+      },
     ];
 
     const currentYearpipeline = [
       {
         $match: {
           ...query,
-          date: { $gte: getCurrentYearDates().startMonthYear, $lte: getCurrentYearDates().endMonthYear } // Filter by date greater than or equal to last year's start date
-        }
+          date: {
+            $gte: getCurrentYearDates().startMonthYear,
+            $lte: getCurrentYearDates().endMonthYear,
+          }, // Filter by date greater than or equal to last year's start date
+        },
       },
       {
         $group: {
-          _id: '$cow_tag_id',
-          totalLiter: { $sum: '$liter' },
-        }
-      }
+          _id: "$cow_tag_id",
+          totalLiter: { $sum: "$liter" },
+        },
+      },
     ];
 
     const lastYearTotalMilk = await MILK.aggregate(lastYearpipeline);
@@ -977,32 +1060,28 @@ const getCowsMilkInfo = async (req, res) => {
     const last = common.convertToDouble(lastYearTotalMilk[0]?.totalLiter);
     const current = common.convertToDouble(currentYearTotalMilk[0]?.totalLiter);
 
-
     // Calculate the total
     const total = last + current;
 
     const milkData = {
-      'currentYearTotalMilk': current,
-      'lastYearTotalMilk': last,
-      'TotalMilk': total,
-    }
-
+      currentYearTotalMilk: current,
+      lastYearTotalMilk: last,
+      TotalMilk: total,
+    };
 
     return res.success({ data: milkData });
-
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
 };
-
 
 function getLastYearMonths() {
   const currentDate = new Date();
   const lastYearStartDate = new Date(currentDate.getFullYear() - 1, 0, 1); // Start of last year
   const lastYearEndDate = new Date(currentDate.getFullYear(), 0, 0); // End of last year (last day of previous year)
 
-  const startDate = lastYearStartDate.toISOString().split('T')[0]; // Extracting YYYY-MM-DD
-  const endDate = lastYearEndDate.toISOString().split('T')[0];
+  const startDate = lastYearStartDate.toISOString().split("T")[0]; // Extracting YYYY-MM-DD
+  const endDate = lastYearEndDate.toISOString().split("T")[0];
 
   const startMonthYear = `${startDate}`;
   const endMonthYear = `${endDate}`;
@@ -1015,8 +1094,8 @@ function getCurrentYearDates() {
   const currentYearStartDate = new Date(currentDate.getFullYear(), 0, 1); // Start of current year
   const currentYearEndDate = new Date(currentDate.getFullYear() + 1, 0, 0); // End of current year (last day of current year)
 
-  const startDate = currentYearStartDate.toISOString().split('T')[0]; // Extracting YYYY-MM-DD
-  const endDate = currentYearEndDate.toISOString().split('T')[0];
+  const startDate = currentYearStartDate.toISOString().split("T")[0]; // Extracting YYYY-MM-DD
+  const endDate = currentYearEndDate.toISOString().split("T")[0];
 
   const startMonthYear = `${startDate}`;
   const endMonthYear = `${endDate}`;
@@ -1029,7 +1108,10 @@ const getSairFamily = async (req, res) => {
     const gaushala_id = req.user.gaushala_id;
 
     const sair_id = req.body.sair_id;
-    const cows = await COW.find({ gaushala_id: gaushala_id, sair_id: sair_id }).select({ 'calf_name': 1, 'tag_id': 1, 'isFemale': 1, 'type': 1 });
+    const cows = await COW.find({
+      gaushala_id: gaushala_id,
+      sair_id: sair_id,
+    }).select({ calf_name: 1, tag_id: 1, isFemale: 1, type: 1 });
 
     return res.success({ data: cows });
   } catch (error) {
@@ -1044,23 +1126,20 @@ const updateCowDod = async (req, res) => {
     const successTags = [];
 
     for (var data of dataToUpdate) {
-
       const tag_id = data.tag_id.toString();
       const findCow = await dbService.findOne(COW, { tag_id: tag_id });
       if (!findCow) {
         errorTags.push(tag_id);
-        console.log("error", tag_id)
-
+        console.log("error", tag_id);
       } else {
         const cowDob = data.dob;
-        await dbService.updateOne(COW, { tag_id: tag_id }, { dob: cowDob })
-        console.log("success", tag_id)
+        await dbService.updateOne(COW, { tag_id: tag_id }, { dob: cowDob });
+        console.log("success", tag_id);
         successTags.push(tag_id);
       }
     }
 
-    return res.success({ data: { errorTags, successTags } })
-
+    return res.success({ data: { errorTags, successTags } });
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
@@ -1068,58 +1147,56 @@ const updateCowDod = async (req, res) => {
 
 const manualCowAdd = async (req, res) => {
   try {
-
     const cowList = req.body.data;
     const errorCowIds = [];
     const successCowIds = [];
     let dataToCreate = {};
 
     for (var cow of cowList) {
-
       const tag_id = cow.tag_id.toString();
-      const findCow = await dbService.findOne(COW, { tag_id: tag_id, gaushala_id: "01" });
+      const findCow = await dbService.findOne(COW, {
+        tag_id: tag_id,
+        gaushala_id: "01",
+      });
       dataToCreate = cow;
 
-
       if (!findCow) {
+        let foundCOW = "";
+        let options = "";
 
-        let foundCOW = '';
-        let options = '';
-
-        const gaushala_id = "01"
+        const gaushala_id = "01";
 
         dataToCreate.dam_id = cow.dam_id.toString();
         dataToCreate.sair_id = cow.sair_id.toString();
-        dataToCreate.isFemale = cow.isFemale == 'M' ? false : true;
+        dataToCreate.isFemale = cow.isFemale == "M" ? false : true;
         let validateRequest = validation.validateParamsWithJoi(
           dataToCreate,
-          COWSchemaKey.schemaKeys);
+          COWSchemaKey.schemaKeys,
+        );
         if (!validateRequest.isValid) {
-          errorCowIds.push({ message: `A record with tag_id '${dataToCreate.tag_id}' already exists.`, data: `Invalid values in parameters, ${validateRequest.message}` });
+          errorCowIds.push({
+            message: `A record with tag_id '${dataToCreate.tag_id}' already exists.`,
+            data: `Invalid values in parameters, ${validateRequest.message}`,
+          });
           //return res.validationError({ message: `Invalid values in parameters, ${validateRequest.message}` });
         }
         dataToCreate.addedBy = "DB-1";
-        dataToCreate.gaushala_id = "01"
-
+        dataToCreate.gaushala_id = "01";
 
         dataToCreate = new COW(dataToCreate);
         await dbService.create(COW, dataToCreate);
 
-
-        console.log('successCowIds', tag_id)
-        successCowIds.push(tag_id)
+        console.log("successCowIds", tag_id);
+        successCowIds.push(tag_id);
       } else {
-
-        console.log('errorCowIds', tag_id)
-        errorCowIds.push({ message: `A record with tag_id '${dataToCreate.tag_id}' already exists.` });
-
+        console.log("errorCowIds", tag_id);
+        errorCowIds.push({
+          message: `A record with tag_id '${dataToCreate.tag_id}' already exists.`,
+        });
       }
-
-
     }
 
-    return res.success({ data: { errorCowIds, successCowIds } })
-
+    return res.success({ data: { errorCowIds, successCowIds } });
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
@@ -1133,22 +1210,22 @@ const updateDamSair = async (req, res) => {
     const oldTagIds = [];
 
     for (var data of dataToUpdate) {
-
       const tag_id = data.tag_id.toString();
       const id = data._id;
-      const findCow = await dbService.findOne(COW, { _id: ObjectId(id), gaushala_id: '02' })
+      const findCow = await dbService.findOne(COW, {
+        _id: ObjectId(id),
+        gaushala_id: "02",
+      });
       //const findCow = await dbService.findOne(COW, { tag_id: tag_id });
       if (!findCow) {
         errorTags.push({ _id: id, tag_id: tag_id });
-        console.log("error", tag_id, id)
-
+        console.log("error", tag_id, id);
       } else {
-
         oldTagIds.push({
           id,
           tag_id: findCow.tag_id.toString(),
-          new_tag_id: data.new_tag.toString()
-        })
+          new_tag_id: data.new_tag.toString(),
+        });
 
         const breed = data.breed;
         const type = data.type;
@@ -1156,7 +1233,7 @@ const updateDamSair = async (req, res) => {
         const new_tag = data.new_tag.toString();
         const dob = data.dob;
         const calf_name = data.calf_name;
-        const isFemale = data.isFemale == 'FALSE' ? false : true;
+        const isFemale = data.isFemale == "FALSE" ? false : true;
         const calf_weight = data.calf_weight;
         const delivery_time = data.delivery_time;
         const send_died_date = data.send_died_date;
@@ -1183,18 +1260,17 @@ const updateDamSair = async (req, res) => {
           dam_id,
           dam_name,
           sair_id,
-          sair_name
-        }
+          sair_name,
+        };
 
-        await dbService.updateOne(COW, { _id: id }, dataToUpdate)
-        await COW.updateOne({ _id: ObjectId(id) }, dataToUpdate)
-        console.log("success", tag_id, id)
+        await dbService.updateOne(COW, { _id: id }, dataToUpdate);
+        await COW.updateOne({ _id: ObjectId(id) }, dataToUpdate);
+        console.log("success", tag_id, id);
         successTags.push({ tag_id, id });
       }
     }
 
-    return res.success({ data: { errorTags, successTags, oldTagIds } })
-
+    return res.success({ data: { errorTags, successTags, oldTagIds } });
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
@@ -1202,24 +1278,21 @@ const updateDamSair = async (req, res) => {
 
 const updateMilkAsPerNewTag02 = async (req, res) => {
   try {
-
     const dataToUpdate = req.body.data;
     const errorTags = [];
     const successTags = [];
 
     for (var data of dataToUpdate) {
-
-
       const old_tag_id = data.tag_id;
-      const findCow = await dbService.findOne(MILK, { cow_tag_id: old_tag_id, gaushala_id: '02' })
-
+      const findCow = await dbService.findOne(MILK, {
+        cow_tag_id: old_tag_id,
+        gaushala_id: "02",
+      });
 
       if (!findCow) {
         errorTags.push({ tag_id: old_tag_id });
-        console.log("error", old_tag_id)
+        console.log("error", old_tag_id);
       } else {
-
-
         // for(var i = 0; i < findCow.length; i++) {
 
         //   const tag_id = findCow[i].cow_tag_id;
@@ -1230,34 +1303,30 @@ const updateMilkAsPerNewTag02 = async (req, res) => {
 
         //   await dbService.updateOne(MILK, { cow_tag_id: tag_id }, dataToUpdate)
 
-
-
         //   console.log("success", tag_id)
         //   successTags.push({ tag_id });
 
         // }
 
         const dataToUpdate = {
-          cow_tag_id: data.new_tag_id
-        }
+          cow_tag_id: data.new_tag_id,
+        };
 
-        const updateMany = await dbService.updateMany(MILK, { cow_tag_id: findCow.cow_tag_id }, dataToUpdate)
-        console.log("success", updateMany, old_tag_id)
+        const updateMany = await dbService.updateMany(
+          MILK,
+          { cow_tag_id: findCow.cow_tag_id },
+          dataToUpdate,
+        );
+        console.log("success", updateMany, old_tag_id);
         successTags.push({ updateMany, old_tag_id });
-
-
-
       }
-
     }
 
-    return res.success({ data: { errorTags, successTags } })
-
+    return res.success({ data: { errorTags, successTags } });
   } catch (error) {
     return res.internalServerError({ message: error.message });
   }
-
-}
+};
 
 module.exports = {
   updateDamSair,
@@ -1285,5 +1354,5 @@ module.exports = {
   getSairFamily,
   deleteManyCOW,
   softDeleteManyCOW,
-  updateMilkAsPerNewTag02
+  updateMilkAsPerNewTag02,
 };
