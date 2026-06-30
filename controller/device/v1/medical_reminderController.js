@@ -57,7 +57,7 @@ function getLatestLog(logsArray) {
 const getPendingReminders = async (req, res) => {
     try {
         const gaushala_id = req.user.gaushala_id;
-        
+
         // Build base query for active/alive cows
         let cowQuery = {
             gaushala_id: gaushala_id,
@@ -229,7 +229,7 @@ const getPendingReminders = async (req, res) => {
 
         const totalDocs = filteredList.length;
         let paginatedData = filteredList;
-        
+
         if (usePagination) {
             const startIndex = (page - 1) * limit;
             const endIndex = page * limit;
@@ -268,6 +268,7 @@ const getPendingReminders = async (req, res) => {
  */
 const addMedicalReminder = async (req, res) => {
     try {
+
         let dataToCreate = { ...req.body || {} };
         let validateRequest = validation.validateParamsWithJoi(
             dataToCreate,
